@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<title>send (watermarked) nudes</title>
+<style media="screen">
+	body {
+	    background-color: #576066;
+	    font-size: 1em;
+	    font-family: 'Helvetica', sans-serif;
+	    color: #FAFAFA;
+	 }
+	#header {
+	     text-transform: uppercase;
+	     padding: 0;
+	     margin: 0;
+	 }
+	.nojs::before {
+	    content: 'JavaScript is required to view this page.';
+	 }
+	.hide {
+	    display: none;
+	 } 
+	.show {
+	    display: block;
+	 }
+	.controls{
+		margin-bottom:0.5em;
+	}
+}
+</style>
+</head>
+<body>
+	<h1 id="header" class="nojs">Send Nudes!</h1>
+	<p>We are tired of people sharing pictures that were meant for their eyes only.<br> 
+		Enough slut-shaming, let's share-shame them!<br><br>
+
+		All credit goes to @vicfabrice for ranting about this on twitter ;)<br> 
+	</p>
+	<div class="controls">
+		<label for="thetext">watermark text:</label>
+		<input type="text" id="thetext" value="sent to @username"><br>
+		<label for="fileInput">choose a picture:</label>
+		<input id="fileInput" type="file" /><br>
+	</div>
+	
+	<canvas id="myCanvas" class="with-border">
+		Your browser does not support the canvas element.
+	</canvas>
+	<canvas id="txtCanvas" class="hide">
+		Your browser does not support the canvas element.
+	</canvas>
+	<canvas id="tmpCanvas" class="hide">
+		Your browser does not support the canvas element.
+	</canvas>
+	<img id="start-image" class="hide" src="imgs/placeholder.png" alt="" />
+
+
+	<script>
+	document.getElementById( 'header' ).classList.remove( 'nojs' );
+    document.getElementById( 'header' ).classList.add( 'js' );
+
+	var fontsize = "24";
+	var thefont = "px Helvetica";
+	var myFont = fontsize.concat(thefont);
+	var hh = parseInt(fontsize) * 1.5;
+	var canvas = document.getElementById("myCanvas");
+	var ctx = canvas.getContext("2d");
+
+	var textInput = document.getElementById("thetext");
+	textInput.addEventListener('change', updateWatermark, false);
+
+	var fileInput = document.getElementById('fileInput');
+    fileInput.addEventListener('change', imageLoader, false);
+
+	var img = document.getElementById('start-image');
+
+	// When the image has loaded...
+	img.onload = function() {
+		// alert("img loaded");
+		canvas.width = img.width;
+		canvas.height = img.height;
+
+		drawWatermark(img, getText());
+	}
+
+	 function imageLoader() {
+	    var reader = new FileReader();
+	    reader.onload = function(event) {
+	      img = document.getElementById('start-image');
+	      img.onload = function(){
+	        // ctx.drawImage(img,0,0);
+	        canvas.width = img.width;
+			canvas.height = img.height;
+
+			drawWatermark(img, getText());
+	      }
+	      img.src = reader.result;
+	    }
+	    reader.readAsDataURL(fileInput.files[0]);
+	}
+
+	function updateWatermark() {
+		// alert("changed " + this.value);
+		drawWatermark(document.getElementById('start-image'),this.value);
+	}
+
+	function getText() {
+		// alert("get " + document.getElementById("thetext").value);
+		return document.getElementById("thetext").value;
+	}
+
+	function drawTheImage(img) {
+		canvas.width = img.width;
+	  	canvas.height = img.height;
+	    // Work out where to center it
+	    x = canvas.width/2 - img.width/2;
+	    y = canvas.height/2 - img.height/2;
+
+	    // Draw it
+	    ctx.drawImage(img, x, y);
+	}
+
+	function drawWatermark(img, thetext) {
+		ctx.font = myFont;
+		
+		// Set up temporary canvas to hold text!
+		var txtCanvas = document.getElementById("txtCanvas");
+		txtCanvas.width = ctx.measureText(thetext).width;
+		txtCanvas.height = hh;
+		var txtCtx = txtCanvas.getContext('2d');
+		txtCtx.fillStyle="#FAFAFA"; 
+		txtCtx.font = myFont;
+		clearCanvases(txtCanvas);
+		txtCtx.fillText(thetext,0,parseInt(fontsize));
+
+		// set up temporary canvas to make text grid
+		var tmpCanvas = document.getElementById("tmpCanvas");
+		tmpCanvas.width = canvas.width*2;
+		tmpCanvas.height = canvas.height*2;
+		clearCanvases(tmpCanvas);
+		var tmpCtx = tmpCanvas.getContext('2d');
+
+		// cross stitch text copies
+		var rows = tmpCanvas.height/txtCanvas.height;
+		var cols = tmpCanvas.width/txtCanvas.width + 1; // we prefer this 
+		var gaph = parseInt(fontsize);
+		var gapv = hh;
+		var posx = 0;
+		var posy = 0;
+
+		for (var i=0;i<rows;i++) {
+			for (var j=0;j<cols;j++) {
+				if (i % 2) posx = (txtCanvas.width+ gaph)*j;
+				else posx = (txtCanvas.width+gaph)*j + -tmpCanvas.width/6;
+				posy = gapv*i;
+				tmpCtx.drawImage(txtCanvas, posx, posy);
+			}
+		}
+
+		
+		clearCanvases(canvas);
+		drawTheImage(img);
+		var thewidth = tmpCanvas.width;
+		var theheight = tmpCanvas.height;
+
+		// center
+	    var x = canvas.width/2 - thewidth/2;
+	    var y = canvas.height/2 - theheight/2;
+		
+		// ctx.fillStyle = 'green';
+  		// ctx.fillRect(x,y,thewidth,theheight);
+  		// ctx.drawImage(tmpCanvas,x,y);
+		ctx.translate(x+thewidth/2,y+theheight/2);
+		ctx.rotate(Math.PI/5);
+  		ctx.translate(-(x+thewidth/2),-(y+theheight/2));
+  		// ctx.fillStyle = 'blue';
+  		// ctx.fillRect(x,y,thewidth,theheight);
+  		ctx.globalAlpha=0.6;
+		ctx.drawImage(tmpCanvas,x,y);
+		ctx.globalAlpha=1;
+  		ctx.rotate(-(Math.PI/5));
+		
+	}
+
+	function clearCanvases(theCanvas) {
+		var context = theCanvas.getContext('2d');
+    	context.clearRect(0, 0, theCanvas.width, theCanvas.height);
+	}
+
+
+
+</script>
+
+</body>
+</html>
